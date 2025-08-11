@@ -384,68 +384,175 @@
 
 
 
-// auth.js
+// // auth.js
+// const jwt = require('jsonwebtoken');
+// const SECRET = process.env.JWT_SECRET || 'secret123';
+
+// // Base authentication middleware
+// const auth = (req, res, next) => {
+//   const token = req.headers.authorization?.split(' ')[1];
+//   if (!token) return res.status(401).json({ message: 'No token provided' });
+
+//   try {
+//     const decoded = jwt.verify(token, SECRET);
+//     req.user = decoded;
+//     next();
+//   } catch (err) {
+//     return res.status(401).json({ message: 'Invalid token' });
+//   }
+// };
+
+// // Admin verification
+// const verifyAdmin = (req, res, next) => {
+//   if (req.user?.role !== 'admin') {
+//     return res.status(403).json({ message: 'Admin access required' });
+//   }
+//   next();
+// };
+
+// // Client verification
+// const verifyClient = (req, res, next) => {
+//   if (req.user?.role !== 'client') {
+//     return res.status(403).json({ message: 'Client access required' });
+//   }
+//   next();
+// };
+
+// // Device access verification
+// const verifyDeviceAccess = async (req, res, next) => {
+//   try {
+//     const device = await Device.findById(req.params.id);
+//     if (!device) return res.status(404).json({ message: 'Device not found' });
+
+//     // Admin has access to all devices
+//     if (req.user.role === 'admin') return next();
+    
+//     // Client has access to their devices
+//     if (req.user.role === 'client' && device.client.equals(req.user._id)) {
+//       return next();
+//     }
+
+//     // User has access to assigned devices
+//     if (req.user.role === 'user' && device.assigned_to.equals(req.user._id)) {
+//       return next();
+//     }
+
+//     return res.status(403).json({ message: 'Access denied' });
+//   } catch (err) {
+//     return res.status(500).json({ message: 'Server error' });
+//   }
+// };
+
+// module.exports = {
+//   auth,
+//   verifyAdmin,
+//   verifyClient,
+//   verifyDeviceAccess
+// };
+
+
+// const jwt = require('jsonwebtoken');
+// const SECRET = process.env.JWT_SECRET || 'secret123';
+
+// // Auth middleware
+// const auth = (req, res, next) => {
+//   const token = req.headers.authorization?.split(' ')[1];
+//   if (!token) return res.status(401).json({ message: 'No token provided' });
+
+//   try {
+//     const decoded = jwt.verify(token, SECRET);
+//     req.user = decoded;
+//     next();
+//   } catch (err) {
+//     return res.status(401).json({ message: 'Invalid token' });
+//   }
+// };
+
+// // Only superadmin or client can proceed
+// const verifySuperadminOrClient = (req, res, next) => {
+//   if (req.user?.role === 'superadmin' || req.user?.role === 'client') {
+//     return next();
+//   }
+//   return res.status(403).json({ message: 'Access denied' });
+// };
+
+// // Optional: verifyClient, verifyAdmin, verifyDeviceAccess remain unchanged if needed elsewhere
+
+// module.exports = {
+//   auth,
+//   verifySuperadminOrClient
+// };
+
+
+
 const jwt = require('jsonwebtoken');
 const SECRET = process.env.JWT_SECRET || 'secret123';
 
-// Base authentication middleware
+// ✅ Auth middleware
 const auth = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ message: 'No token provided' });
 
-  try {
-    const decoded = jwt.verify(token, SECRET);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    return res.status(401).json({ message: 'Invalid token' });
-  }
+ try {
+  const decoded = jwt.verify(token, SECRET);
+  req.user = decoded;
+  next();
+} catch (err) {
+  const message = err.name === 'TokenExpiredError' ? 'Token expired' : 'Invalid token';
+  return res.status(401).json({ message });
+}
 };
 
-// Admin verification
+// ✅ Role-based middlewares
+const verifySuperadmin = (req, res, next) => {
+  if (req.user?.role === 'superadmin') {
+    return next();
+  }
+  return res.status(403).json({ message: 'Only superadmin can access this route' });
+};
+
 const verifyAdmin = (req, res, next) => {
-  if (req.user?.role !== 'admin') {
-    return res.status(403).json({ message: 'Admin access required' });
+  if (req.user?.role === 'admin') {
+    return next();
   }
-  next();
+  return res.status(403).json({ message: 'Only admin can access this route' });
 };
 
-// Client verification
 const verifyClient = (req, res, next) => {
-  if (req.user?.role !== 'client') {
-    return res.status(403).json({ message: 'Client access required' });
+  if (req.user?.role === 'client') {
+    return next();
   }
-  next();
+  return res.status(403).json({ message: 'Only client can access this route' });
 };
 
-// Device access verification
-const verifyDeviceAccess = async (req, res, next) => {
-  try {
-    const device = await Device.findById(req.params.id);
-    if (!device) return res.status(404).json({ message: 'Device not found' });
-
-    // Admin has access to all devices
-    if (req.user.role === 'admin') return next();
-    
-    // Client has access to their devices
-    if (req.user.role === 'client' && device.client.equals(req.user._id)) {
-      return next();
-    }
-
-    // User has access to assigned devices
-    if (req.user.role === 'user' && device.assigned_to.equals(req.user._id)) {
-      return next();
-    }
-
-    return res.status(403).json({ message: 'Access denied' });
-  } catch (err) {
-    return res.status(500).json({ message: 'Server error' });
+const verifyDeviceAccess = (req, res, next) => {
+  if (['client', 'superadmin', 'admin'].includes(req.user?.role)) {
+    return next();
   }
+  return res.status(403).json({ message: 'No permission to access device' });
 };
 
+const verifySuperadminOrClient = (req, res, next) => {
+  if (req.user?.role === 'superadmin' || req.user?.role === 'client') {
+    return next();
+  }
+  return res.status(403).json({ message: 'Access denied' });
+};
+
+const verifyAdminOrSuperadmin = (req, res, next) => {
+  if (req.user?.role === 'admin' || req.user?.role === 'superadmin') {
+    return next();
+  }
+  return res.status(403).json({ message: 'Only admin or superadmin can access this route' });
+};
+
+// ✅ Export all
 module.exports = {
   auth,
+  verifySuperadmin,
   verifyAdmin,
   verifyClient,
-  verifyDeviceAccess
+  verifyDeviceAccess,
+  verifySuperadminOrClient,
+  verifyAdminOrSuperadmin
 };
