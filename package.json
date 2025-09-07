@@ -3,11 +3,10 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "dev": "nodemon server.js",
-    "start": "node server.js",
-    "clean": "rm -rf node_modules package-lock.json",
-    "reinstall": "npm run clean && npm install"
-  },
+  "dev": "nodemon server.js",
+  "start": "node server.js"
+},
+
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",

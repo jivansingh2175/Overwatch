@@ -708,15 +708,26 @@ if (isNaN(PORT) || PORT < 1 || PORT > 65535) {
   process.exit(1);
 }
 
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🔗 http://localhost:${PORT}`);
+  console.log(`🔗 Local test: http://localhost:${PORT}`);
   console.log(`🌐 CORS configured for: ${process.env.CLIENT_URL || 'http://localhost:3000'}`);
   console.log(`📊 Debug endpoints available:`);
-  console.log(`   - http://localhost:${PORT}/health`);
-  console.log(`   - http://localhost:${PORT}/api/debug/sockets`);
-  console.log(`   - http://localhost:${PORT}/api/debug/status`);
+  console.log(`   - /health`);
+  console.log(`   - /api/debug/sockets`);
+  console.log(`   - /api/debug/status`);
 });
+
+
+// server.listen(PORT, () => {
+//   console.log(`🚀 Server running on port ${PORT}`);
+//   console.log(`🔗 http://localhost:${PORT}`);
+//   console.log(`🌐 CORS configured for: ${process.env.CLIENT_URL || 'http://localhost:3000'}`);
+//   console.log(`📊 Debug endpoints available:`);
+//   console.log(`   - http://localhost:${PORT}/health`);
+//   console.log(`   - http://localhost:${PORT}/api/debug/sockets`);
+//   console.log(`   - http://localhost:${PORT}/api/debug/status`);
+// });
 
 // Graceful shutdown
 const shutdown = () => {
