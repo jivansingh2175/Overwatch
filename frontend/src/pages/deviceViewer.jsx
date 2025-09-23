@@ -593,234 +593,142 @@
 
 
 
-
-
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import io from "socket.io-client";
+import "./deviceViewer.css";
 
 const socket = io("http://localhost:5000");
 
-export default function Viewer() {
-  const [pin, setPin] = useState("");
-  const [accessKey, setAccessKey] = useState("");
+const DeviceViewer = () => {
   const [deviceId, setDeviceId] = useState("");
-  const [connected, setConnected] = useState(false);
-  const [error, setError] = useState("");
-  const [usePin, setUsePin] = useState(true);
-  const [status, setStatus] = useState("Disconnected");
-  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
-  const [lastImageTime, setLastImageTime] = useState(null);
-  const [scaleFactor, setScaleFactor] = useState(1);
+  const [pin, setPin] = useState("");
+  const [streaming, setStreaming] = useState(false);
+  const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const [error, setError] = useState("");
 
-  // useCallback ensures function identity doesn't change on every render
-  const scaleCanvasToFit = useCallback(() => {
-    if (canvasRef.current && canvasSize.width > 0) {
-      const container = canvasRef.current.parentElement;
-      const maxWidth = container.clientWidth - 40; // padding
-      const scale = Math.min(1, maxWidth / canvasSize.width);
-      setScaleFactor(scale);
-      canvasRef.current.style.width = `${canvasSize.width * scale}px`;
-      canvasRef.current.style.height = `${canvasSize.height * scale}px`;
-    }
-  }, [canvasSize]);
-
-  // Socket setup
+  // Log all socket events
   useEffect(() => {
-    socket.on("connect", () => {
-      console.log("✅ Connected to server");
-      setStatus("Connected to server");
+    socket.onAny((event, data) => {
+      console.log("📡 Socket event:", event, data);
     });
 
-    socket.on("disconnect", () => {
-      console.log("❌ Disconnected from server");
-      setStatus("Disconnected");
-      setConnected(false);
-    });
-
-    socket.on("join_success", ({ device_id }) => {
-      console.log("✅ Joined device successfully:", device_id);
-      setConnected(true);
-      setDeviceId(device_id);
-      setError("");
-      setStatus(`Connected to device: ${device_id}`);
-    });
-
-    socket.on("join_error", ({ message }) => {
-      console.error("❌ Join error:", message);
-      setError(message);
-      setStatus(`Error: ${message}`);
-    });
-
-    socket.on("screen-data", (data) => {
-      console.log('📺 Received screen data:', data);
-      setLastImageTime(new Date());
-
-      if (!data || !data.image) {
-        console.error('❌ Invalid screen data received');
-        setStatus('Error: Invalid screen data');
-        return;
-      }
-
-      if (data.device_id !== deviceId) {
-        console.log('⚠️ Ignoring screen data for different device:', data.device_id);
-        return;
-      }
-
-      setStatus("Receiving screen stream...");
-
-      const img = new Image();
-      img.onload = function() {
-        if (canvasRef.current) {
-          const ctx = canvasRef.current.getContext("2d");
-          canvasRef.current.width = img.width;
-          canvasRef.current.height = img.height;
-          setCanvasSize({ width: img.width, height: img.height });
-
-          ctx.clearRect(0, 0, img.width, img.height);
-          ctx.drawImage(img, 0, 0, img.width, img.height);
-
-          setStatus(`✅ Streaming: ${deviceId} (${img.width}x${img.height})`);
-          setTimeout(scaleCanvasToFit, 100); // scale after load
-        }
-      };
-
-      img.onerror = function() {
-        console.error('❌ Failed to load image');
-        setStatus("Error loading image");
-      };
-
-      img.src = data.image;
+    socket.on("device_registered", ({ pin }) => {
+      setPin(pin);
     });
 
     socket.on("error", (message) => {
-      console.error("❌ Socket error:", message);
       setError(message);
-      setStatus(`Error: ${message}`);
+      alert(`Error: ${message}`);
     });
 
     return () => {
-      socket.off("connect");
-      socket.off("disconnect");
-      socket.off("join_success");
-      socket.off("join_error");
-      socket.off("screen-data");
+      socket.offAny();
+      socket.off("device_registered");
       socket.off("error");
+      stopStreaming();
     };
-  }, [deviceId, scaleCanvasToFit]);
+  }, []);
 
-  // Resize listener for canvas scaling
-  useEffect(() => {
-    scaleCanvasToFit();
-    window.addEventListener('resize', scaleCanvasToFit);
-    return () => window.removeEventListener('resize', scaleCanvasToFit);
-  }, [scaleCanvasToFit]);
+  const startStreaming = async () => {
+    if (!deviceId) {
+      setError("Device ID is required");
+      return;
+    }
 
-  const handleJoin = () => {
-    setError("");
-    setStatus("Connecting...");
-    
-    if (usePin) {
-      if (!pin) {
-        setError("PIN is required");
-        setStatus("PIN is required");
-        return;
+    setStreaming(true);
+
+    try {
+      const mediaStream = await navigator.mediaDevices.getDisplayMedia({
+        video: { cursor: "always", frameRate: 10 },
+        audio: false,
+      });
+
+      mediaStreamRef.current = mediaStream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        await videoRef.current.play();
       }
-      console.log("🔗 Joining with PIN:", pin);
-      socket.emit("join_with_pin", { pin });
-    } else {
-      if (!deviceId || !accessKey) {
-        setError("Device ID and Access Key are required");
-        setStatus("Device ID and Access Key are required");
-        return;
-      }
-      console.log("🔗 Joining with device ID:", deviceId);
-      socket.emit("watch-device", { device_id: deviceId, access_key: accessKey });
+
+      videoRef.current.onloadedmetadata = () => {
+        captureFrame();
+      };
+
+      mediaStream.getTracks().forEach((track) => {
+        track.onended = () => stopStreaming();
+      });
+    } catch (err) {
+      setError("Failed to capture screen: " + err.message);
+      stopStreaming();
     }
   };
 
-  const handleDisconnect = () => {
-    socket.disconnect();
-    setConnected(false);
-    setStatus("Disconnected");
-    setError("");
-    setCanvasSize({ width: 0, height: 0 });
+  const captureFrame = () => {
+    if (!streaming || !videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const imageData = canvas.toDataURL("image/jpeg", 0.7);
+    socket.emit("screen-data", { device_id: deviceId, image: imageData });
+
+    setTimeout(() => {
+      animationRef.current = requestAnimationFrame(captureFrame);
+    }, 200);
   };
 
-  const testCanvasDrawing = () => {
-    if (canvasRef.current) {
-      const ctx = canvasRef.current.getContext("2d");
-      const width = 400;
-      const height = 300;
+  const stopStreaming = () => {
+    setStreaming(false);
+    setPin("");
 
-      canvasRef.current.width = width;
-      canvasRef.current.height = height;
-      setCanvasSize({ width, height });
-
-      // Draw gradient and text
-      const gradient = ctx.createLinearGradient(0, 0, width, height);
-      gradient.addColorStop(0, '#ff6b6b');
-      gradient.addColorStop(1, '#4ecdc4');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
-
-      ctx.fillStyle = 'white';
-      ctx.font = 'bold 24px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('Canvas Works!', width / 2, height / 2);
-      ctx.font = '16px Arial';
-      ctx.fillText('Click to test drawing', width / 2, height / 2 + 30);
-
-      ctx.strokeStyle = '#2d3436';
-      ctx.lineWidth = 4;
-      ctx.strokeRect(10, 10, width - 20, height - 20);
-
-      setStatus("✅ Test pattern drawn successfully");
-      setTimeout(scaleCanvasToFit, 100);
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
     }
-  };
 
-  const handleCanvasClick = (e) => {
-    if (canvasRef.current) {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const scaleX = canvasRef.current.width / rect.width;
-      const scaleY = canvasRef.current.height / rect.height;
-      const x = (e.clientX - rect.left) * scaleX;
-      const y = (e.clientY - rect.top) * scaleY;
-
-      const ctx = canvasRef.current.getContext("2d");
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-      ctx.beginPath();
-      ctx.arc(x, y, 15, 0, Math.PI * 2);
-      ctx.fill();
-      console.log(`Canvas clicked at: ${Math.round(x)}, ${Math.round(y)}`);
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
     }
-  };
 
-  const handleFullScreen = () => {
-    if (canvasRef.current) {
-      if (canvasRef.current.requestFullscreen) canvasRef.current.requestFullscreen();
-      else if (canvasRef.current.webkitRequestFullscreen) canvasRef.current.webkitRequestFullscreen();
-      else if (canvasRef.current.msRequestFullscreen) canvasRef.current.msRequestFullscreen();
-    }
+    if (videoRef.current) videoRef.current.srcObject = null;
   };
 
   return (
-    <div className="viewer-dashboard" style={{ padding: 20, fontFamily: 'Arial, sans-serif', position: 'relative', maxWidth: 1400, margin: '0 auto', minHeight: '100vh' }}>
-      <h2 style={{ color: '#2d3436', marginBottom: 20, textAlign: 'center' }}>🎥 Screen Viewer Dashboard</h2>
+    <div className="device-viewer">
+      <h2>Device Viewer</h2>
 
-      {/* Canvas container */}
-      <div style={{ border: '4px solid #00cec9', padding: 20, display: 'inline-block', backgroundColor: '#2d3436', borderRadius: 12, margin: 20, boxShadow: '0 6px 25px rgba(0,0,0,0.3)', maxWidth: '95%', overflow: 'hidden' }}>
-        <canvas ref={canvasRef} onClick={handleCanvasClick} style={{ display: 'block', border: '2px solid #636e72', backgroundColor: '#000', cursor: 'pointer', borderRadius: 6, margin: '0 auto', maxWidth: '100%', height: 'auto' }} />
-      </div>
+      {error && <div className="error-message">❌ {error}</div>}
 
-      {/* Buttons */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <button onClick={handleDisconnect} style={{ padding: 12, backgroundColor: '#e74c3c', color: '#fff', borderRadius: 8, cursor: 'pointer' }}>🔌 Disconnect</button>
-        <button onClick={testCanvasDrawing} style={{ padding: 12, backgroundColor: '#f39c12', color: '#fff', borderRadius: 8, cursor: 'pointer' }}>🎨 Test Canvas</button>
-        <button onClick={handleFullScreen} style={{ padding: 12, backgroundColor: '#9b59b6', color: '#fff', borderRadius: 8, cursor: 'pointer' }}>📺 Fullscreen</button>
-        <button onClick={scaleCanvasToFit} style={{ padding: 12, backgroundColor: '#27ae60', color: '#fff', borderRadius: 8, cursor: 'pointer' }}>🔄 Rescale</button>
-      </div>
+      <input
+        type="text"
+        placeholder="Enter Device ID"
+        value={deviceId}
+        onChange={(e) => setDeviceId(e.target.value)}
+        disabled={streaming}
+      />
+
+      <button onClick={streaming ? stopStreaming : startStreaming}>
+        {streaming ? "Stop Streaming" : "Start Streaming"}
+      </button>
+
+      <video ref={videoRef} style={{ display: "none" }} autoPlay muted />
+      <canvas ref={canvasRef} style={{ display: "none" }} />
+
+      {streaming && pin && (
+        <div className="pin-info">
+          <p>🔑 Your PIN: {pin}</p>
+        </div>
+      )}
     </div>
   );
-}
+};
+
+export default DeviceViewer;

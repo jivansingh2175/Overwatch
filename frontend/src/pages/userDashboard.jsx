@@ -319,10 +319,9 @@
 
 
 
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import "./userDashboard.css";
 import io from "socket.io-client";
+import "./userDashboard.css";
 
 const socket = io("http://localhost:5000");
 
@@ -338,17 +337,12 @@ const UserDashboard = () => {
   const animationRef = useRef(null);
   const mediaStreamRef = useRef(null);
 
-  // Log all socket events
   useEffect(() => {
-    socket.onAny((event, data) => console.log("📡 User Socket event:", event, data));
+    socket.onAny((event, data) => console.log("📡 Socket:", event, data));
 
-    socket.on("device_registered", ({ device_id, pin }) => {
-      console.log(`✅ Device registered with PIN: ${pin}`);
-      setPin(pin);
-    });
+    socket.on("device_registered", ({ pin }) => setPin(pin));
 
     socket.on("error", (message) => {
-      console.error("❌ Socket error:", message);
       setError(message);
       alert(`Error: ${message}`);
     });
@@ -361,10 +355,28 @@ const UserDashboard = () => {
     };
   }, []);
 
-  // Start screen capture when streaming starts
-  const startScreenCapture = useCallback(async () => {
+  const captureFrame = useCallback(() => {
+    if (!streaming || !videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const imageData = canvas.toDataURL("image/jpeg", 0.7);
+    socket.emit("screen-data", { device_id: deviceId, image: imageData });
+
+    setTimeout(() => {
+      animationRef.current = requestAnimationFrame(captureFrame);
+    }, 200);
+  }, [streaming, deviceId]);
+
+  const startScreenCapture = async () => {
     try {
-      console.log("🎥 Requesting screen share permission...");
       const mediaStream = await navigator.mediaDevices.getDisplayMedia({
         video: { cursor: "always", frameRate: 10 },
         audio: false,
@@ -377,85 +389,42 @@ const UserDashboard = () => {
         await videoRef.current.play();
       }
 
-      videoRef.current.onloadedmetadata = () => captureFrame();
+      videoRef.current.onloadedmetadata = captureFrame;
 
       mediaStream.getTracks().forEach((track) => {
         track.onended = stopSharing;
       });
     } catch (err) {
-      console.error("Screen capture error:", err);
-      setError("Failed to capture screen: " + err.message);
+      setError("Screen capture failed: " + err.message);
       stopSharing();
     }
-  }, [deviceId]);
-
-  useEffect(() => {
-    if (streaming && pin) {
-      startScreenCapture();
-    }
-
-    return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
-    };
-  }, [streaming, pin, startScreenCapture]);
-
-  const captureFrame = () => {
-    if (!streaming || !videoRef.current || !canvasRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-
-    if (video.videoWidth === 0 || video.videoHeight === 0) {
-      animationRef.current = requestAnimationFrame(captureFrame);
-      return;
-    }
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const imageData = canvas.toDataURL("image/jpeg", 0.7);
-
-    socket.emit("screen-data", { device_id: deviceId, image: imageData });
-
-    setTimeout(() => {
-      animationRef.current = requestAnimationFrame(captureFrame);
-    }, 200);
   };
 
   const handleStartSharing = () => {
-    if (!deviceId) return setError("Device ID is required");
-    if (!deviceName) return setError("Device Name is required");
+    if (!deviceId || !deviceName) {
+      setError("Device ID and Name are required");
+      return;
+    }
 
-    setError("");
-
-    socket.emit("register_device", { device_id: deviceId, name: deviceName });
     setStreaming(true);
+    socket.emit("register_device", { device_id: deviceId, name: deviceName });
   };
 
   const stopSharing = () => {
-    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    setStreaming(false);
+    setPin("");
+
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach((track) => track.stop());
       mediaStreamRef.current = null;
     }
+
     if (videoRef.current) videoRef.current.srcObject = null;
-
-    setStreaming(false);
-    setPin("");
-  };
-
-  const handleTestFrame = () => {
-    const testImage =
-      "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgZmlsbD0iIzMzMyIvPjx0ZXh0IHg9IjQwMCIgeT0iMzAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZvbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5UZXN0IFNjcmVlbiBGcmFtZTwvdGV4dD48L3N2Zz4=";
-    socket.emit("screen-data", { device_id: deviceId, image: testImage });
-    console.log("🧪 Sent test screen frame");
-  };
-
-  const copyPinToClipboard = () => {
-    navigator.clipboard.writeText(pin).then(() => alert("PIN copied to clipboard!"));
   };
 
   return (
@@ -464,70 +433,29 @@ const UserDashboard = () => {
 
       {error && <div className="error-message">❌ {error}</div>}
 
-      <div className="input-group">
-        <input
-          type="text"
-          placeholder="Enter Device ID"
-          value={deviceId}
-          onChange={(e) => setDeviceId(e.target.value)}
-          disabled={streaming}
-        />
-        <input
-          type="text"
-          placeholder="Enter Device Name"
-          value={deviceName}
-          onChange={(e) => setDeviceName(e.target.value)}
-          disabled={streaming}
-        />
-      </div>
+      <input
+        type="text"
+        placeholder="Device ID"
+        value={deviceId}
+        onChange={(e) => setDeviceId(e.target.value)}
+        disabled={streaming}
+      />
+      <input
+        type="text"
+        placeholder="Device Name"
+        value={deviceName}
+        onChange={(e) => setDeviceName(e.target.value)}
+        disabled={streaming}
+      />
 
-      <div className="button-group">
-        <button
-          onClick={streaming ? stopSharing : handleStartSharing}
-          className={streaming ? "stop-button" : "start-button"}
-        >
-          {streaming ? "Stop Sharing" : "Start Sharing"}
-        </button>
-        {streaming && (
-          <button onClick={handleTestFrame} className="test-button">
-            Test Frame
-          </button>
-        )}
-      </div>
+      <button onClick={streaming ? stopSharing : handleStartSharing}>
+        {streaming ? "Stop Sharing" : "Start Sharing"}
+      </button>
 
-      <video ref={videoRef} style={{ display: "none" }} autoPlay muted playsInline />
+      <video ref={videoRef} style={{ display: "none" }} autoPlay muted />
       <canvas ref={canvasRef} style={{ display: "none" }} />
 
-      {streaming && pin && (
-        <div className="device-info">
-          <div className="pin-info">
-            <h3>🔑 Your Sharing PIN</h3>
-            <div className="pin-display">
-              <span className="pin-value">{pin}</span>
-              <button onClick={copyPinToClipboard} className="copy-button">
-                📋 Copy
-              </button>
-            </div>
-            <p>Share this PIN with viewers to allow them to connect to your screen.</p>
-          </div>
-          <div className="status-info">
-            <p>
-              📡 Status: <span className="status-online">Live Streaming</span>
-            </p>
-            <p>
-              🖥️ Device: {deviceName} ({deviceId})
-            </p>
-          </div>
-        </div>
-      )}
-
-      {streaming && !pin && <div className="loading-info">⏳ Waiting for PIN assignment...</div>}
-
-      <div className="debug-info">
-        <p>
-          <small>Open browser console (F12) for detailed logs</small>
-        </p>
-      </div>
+      {streaming && pin && <p>🔑 PIN: {pin}</p>}
     </div>
   );
 };
