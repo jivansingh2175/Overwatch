@@ -1,0 +1,58 @@
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f8fafc; /* Light blue-gray */
+  padding: 0.5rem 1.2rem; /* Smaller padding */
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.navbar-title {
+  font-size: 1.2rem; /* Reduced from 1.75rem */
+  font-weight: 700;
+  color: #0f172a; /* Slate-900 */
+  letter-spacing: 0.5px;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 0.8rem; /* Reduced spacing */
+  align-items: center;
+}
+
+.navbar-link {
+  color: #475569; /* Slate-600 */
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
+}
+
+.navbar-link:hover {
+  color: #2563eb; /* Blue-600 */
+}
+
+.logout-button {
+  background: none;
+  border: none;
+  color: #ef4444; /* Red-500 */
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.logout-button:hover {
+  text-decoration: underline;
+  color: #b91c1c; /* Red-700 */
+}
+
+/* .navbar-user-email {
+  margin-right: 1rem;
+  color: #ffffff;
+  font-weight: bold;
+} */

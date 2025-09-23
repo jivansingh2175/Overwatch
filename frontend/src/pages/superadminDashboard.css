@@ -1,0 +1,386 @@
+General container
+.superadmin-dashboard {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Title */
+.superadmin-dashboard .title {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+/* Form section */
+.form-container {
+  background-color: #ffffff;
+  padding: 25px;
+  border-radius: 10px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.form-container h3 {
+  margin-bottom: 20px;
+  color: #444;
+  font-size: 22px;
+}
+
+.create-client-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.create-client-form input {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+}
+
+.create-client-form input:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+.create-client-form button {
+  padding: 12px;
+  background-color: #007bff;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.create-client-form button:hover {
+  background-color: #0056b3;
+}
+
+/* Success/Error message */
+.message {
+  margin-top: 15px;
+  color: green;
+  font-weight: 500;
+}
+
+/* Clients list */
+.client-list {
+  background-color: #ffffff;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.client-list h3 {
+  font-size: 22px;
+  margin-bottom: 20px;
+  color: #444;
+}
+
+.client-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.client-item {
+  padding: 15px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  background-color: #fafafa;
+}
+
+.client-item strong {
+  color: #222;
+} */
+
+
+
+
+/* superadminDashboard.css */
+
+/* Base Styles */
+.superadmin-dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+}
+
+.title {
+  text-align: center;
+  color: #2c3e50;
+  margin-bottom: 2rem;
+  font-size: 2.2rem;
+  font-weight: 600;
+}
+
+/* Form Container */
+.form-container {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.form-container h3 {
+  margin-top: 0;
+  color: #2c3e50;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.create-client-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.create-client-form input {
+  padding: 0.8rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.create-client-form input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.create-client-form button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 0.8rem 1rem;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-top: 0.5rem;
+}
+
+.create-client-form button:hover {
+  background-color: #2980b9;
+}
+
+/* Message Styling */
+.message {
+  margin-top: 1rem;
+  padding: 0.8rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.message.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.message.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Client List */
+.client-list {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+}
+
+.client-list h3 {
+  margin-top: 0;
+  color: #2c3e50;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.client-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.client-item {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 1.2rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.client-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.client-item strong {
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .superadmin-dashboard {
+    padding: 1rem;
+  }
+  
+  .form-container, .client-list {
+    padding: 1.5rem;
+  }
+  
+  .client-list ul {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.client-item {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.client-item:nth-child(1) { animation-delay: 0.1s; }
+.client-item:nth-child(2) { animation-delay: 0.2s; }
+.client-item:nth-child(3) { animation-delay: 0.3s; }
+/* Add more if you expect more items
+
+
+
+
+/* superadminDashboard.css */
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f5f7fa;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.superadmin-dashboard {
+  max-width: 800px;
+  margin: 60px auto;
+  padding: 30px 40px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.superadmin-dashboard .title {
+  font-size: 28px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+/* Form Section */
+.form-container {
+  margin-bottom: 40px;
+}
+
+.form-container h3 {
+  font-size: 20px;
+  color: #444;
+  margin-bottom: 15px;
+}
+
+.create-client-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.create-client-form input {
+  padding: 12px 14px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #fafafa;
+  transition: border-color 0.3s;
+}
+
+.create-client-form input:focus {
+  border-color: #007bff;
+  background-color: #fff;
+  outline: none;
+}
+
+.create-client-form button {
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.create-client-form button:hover {
+  background-color: #0056b3;
+}
+
+.message {
+  margin-top: 15px;
+  color: green;
+  font-weight: 500;
+}
+
+/* Client List Section */
+.client-list h3 {
+  font-size: 20px;
+  color: #444;
+  margin-bottom: 15px;
+}
+
+.client-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+.client-item {
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  background-color: #fdfdfd;
+  transition: box-shadow 0.2s;
+}
+
+.client-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.client-item strong {
+  color: #333;
+}
