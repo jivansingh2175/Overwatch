@@ -319,6 +319,7 @@
 
 
 
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import io from "socket.io-client";
 import "./userDashboard.css";
@@ -408,6 +409,9 @@ const UserDashboard = () => {
 
     setStreaming(true);
     socket.emit("register_device", { device_id: deviceId, name: deviceName });
+
+    // ✅ Call screen capture when sharing starts
+    startScreenCapture();
   };
 
   const stopSharing = () => {
