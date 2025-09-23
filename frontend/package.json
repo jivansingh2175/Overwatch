@@ -2,7 +2,7 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://jivansingh2175.github.io/Overwatch",
+  "homepage": ".",
   "proxy": "http://localhost:5000",
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
