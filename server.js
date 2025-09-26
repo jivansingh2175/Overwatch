@@ -52,9 +52,9 @@ app.use((req, res, next) => {
 });
 
 // ✅ CORRECTED PATHS - Remove ./Backend/ since server.js is already in Backend
-const authRoutes = require('./backend/routes/authRoutes');
-const deviceRoutes = require('./backend/routes/deviceRoutes');
-const superadminRoutes = require('./backend/routes/superadmin');
+const authRoutes = require('./Backend/routes/authRoutes');
+const deviceRoutes = require('./Backend/routes/deviceRoutes');
+const superadminRoutes = require('./Backend/routes/superadmin');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/devices', deviceRoutes);
@@ -151,7 +151,7 @@ const io = socketio(server, {
 });
 
 // ✅ CORRECTED PATH - Remove ./Backend/ since server.js is already in Backend
-const setupDeviceSockets = require('./backend/sockets/deviceSockets');
+const setupDeviceSockets = require('./Backend/sockets/deviceSockets');
 
 // Pass the devices map to the socket handler for debug access
 setupDeviceSockets(io);
